@@ -11,7 +11,8 @@ using namespace std;
 
 using PHMAP_COLOR_TO_ID = gtl::flat_hash_map<uint64_t, gtl::flat_hash_set<uint32_t>>;
 using PHMAP_COLOR_TO_COUNT = gtl::flat_hash_map<uint64_t, uint64_t>;
-using PHMAP_ID_TO_NAME = gtl::flat_hash_map<string, uint64_t>;
+using PHMAP_ID_TO_NAME = gtl::flat_hash_map<uint64_t, string>;
+using PHMAP_ID_TO_KMER_COUNT = gtl::flat_hash_map<uint64_t, uint64_t>;
 using PHMAP_COLOR_TO_IDS = gtl::flat_hash_map<uint64_t, gtl::flat_hash_set<uint32_t>>;
 
 
@@ -32,12 +33,14 @@ namespace Gatherly {
         int total_parts;
         int scale;
         vector<IndexStruct> index_parts;
-        PHMAP_ID_TO_NAME name_to_id;
+        PHMAP_ID_TO_NAME id_to_name;
+        PHMAP_ID_TO_KMER_COUNT id_to_kmer_count;
 
         SplittedIndex(string directory, string input_prefix);
         void load_colors_to_ids(const std::string& filename, PHMAP_COLOR_TO_IDS* map);
         void load_color_to_count(const std::string& filename, PHMAP_COLOR_TO_COUNT* map);
-        void load_id_to_name(const std::string& filename);
+        void load_id_to_name(const std::string& filename); // done
+        void load_id_to_kmer_count(const std::string& filename); // done
         tuple<uint64_t, uint64_t> load_metadata(const std::string& filename);
 
     };
