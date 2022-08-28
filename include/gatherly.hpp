@@ -4,16 +4,21 @@
 #include <map>
 #include <cstdint>
 #include <tuple>
-#include <gtl/phmap.hpp>
+#include <parallel_hashmap/phmap.h>
 
 
 using namespace std;
+using phmap::flat_hash_map;
+using phmap::flat_hash_set;
+using phmap::parallel_flat_hash_map;
 
-using PHMAP_COLOR_TO_COUNT = gtl::flat_hash_map<uint64_t, uint64_t>;
-using PHMAP_ID_TO_NAME = gtl::flat_hash_map<uint64_t, string>;
-using PHMAP_ID_TO_KMER_COUNT = gtl::flat_hash_map<uint64_t, uint64_t>;
-using PHMAP_COLOR_TO_IDS = gtl::flat_hash_map<uint64_t, gtl::flat_hash_set<uint32_t>>;
-using PHMAP_KMER_TO_COLOR = gtl::parallel_flat_hash_map<uint64_t, uint64_t,
+
+
+using PHMAP_COLOR_TO_COUNT = flat_hash_map<uint64_t, uint64_t>;
+using PHMAP_ID_TO_NAME = flat_hash_map<uint64_t, string>;
+using PHMAP_ID_TO_KMER_COUNT = flat_hash_map<uint32_t, uint32_t>;
+using PHMAP_COLOR_TO_IDS = flat_hash_map<uint64_t, flat_hash_set<uint32_t>>;
+using PHMAP_KMER_TO_COLOR = parallel_flat_hash_map<uint64_t, uint64_t,
     std::hash<uint64_t>, std::equal_to<uint64_t>, std::allocator<std::pair<const uint64_t, uint64_t>>, 2>;
 
 namespace Gatherly {
@@ -39,7 +44,7 @@ namespace Gatherly {
         int scale;
 
         // stores the split index (complete or partial).
-        gtl::flat_hash_map<int, IndexStruct> index_parts;
+        flat_hash_map<int, IndexStruct> index_parts;
 
         // Map source id to its original name.
         PHMAP_ID_TO_NAME id_to_name;
@@ -48,14 +53,14 @@ namespace Gatherly {
         PHMAP_ID_TO_KMER_COUNT id_to_kmer_count;
 
         // map that maps the part id to hash intervals<from_hash, to_hash>
-        gtl::flat_hash_map<int, tuple<uint64_t, uint64_t>> hash_ranges;
+        flat_hash_map<int, tuple<uint64_t, uint64_t>> hash_ranges;
 
         // Class constructor
-        SplittedIndex(string directory, string input_prefix);
+        SplittedIndex(string input_prefix);
 
         // Function to deserialize phmap of color to set of ids
         void load_colors_to_ids(int part_id);
-        
+
         // deserialize phmap of colors to count of colors.
         void load_color_to_count(int part);
 
@@ -84,10 +89,10 @@ namespace Gatherly {
         uint64_t get_color_from_hash(uint64_t& kmer_hash);
 
         // given a hashed_kmer, return its associated sources
-        gtl::flat_hash_set<uint32_t> get_ids_from_hash(uint64_t& kmer_hash);
+        flat_hash_set<uint32_t> get_ids_from_hash(uint64_t& kmer_hash);
 
         // given a hashed_kmer, return its associated sources
-        gtl::flat_hash_set<uint32_t> get_ids_from_color(uint64_t& kmer_hash, int part_id);
+        flat_hash_set<uint32_t> get_ids_from_color(uint64_t& kmer_hash, int part_id);
 
         // given a scale value and number of pars, split the hash-space into equal hash intervals.
         void splitted_ranges(uint64_t scale, int parts);
@@ -95,7 +100,10 @@ namespace Gatherly {
         // TODO: Optimize to interval search
         int kmer_to_part(uint64_t& kmer_hash);
 
+        string gatherly_test();
 
+
+        // ~SplittedIndex();
     };
 
 };

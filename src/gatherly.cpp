@@ -3,9 +3,20 @@
 #include <iostream>
 #include <map>
 #include <gatherly.hpp>
-#include <gtl/phmap_dump.hpp>
+#include <parallel_hashmap/phmap.h>
+#include <parallel_hashmap/phmap_dump.h>
+
 
 using namespace std;
+using phmap::flat_hash_map;
+using phmap::flat_hash_set;
+using phmap::parallel_flat_hash_map;
+using phmap::BinaryInputArchive;
+
+
+string Gatherly::SplittedIndex::gatherly_test() {
+    return "Hello, Gatherly!";
+}
 
 
 inline uint64_t to_uint64_t(std::string const& value) {
@@ -20,7 +31,7 @@ inline uint64_t to_uint64_t(std::string const& value) {
 }
 
 tuple<uint64_t, uint64_t> Gatherly::SplittedIndex::load_metadata(const std::string& filename) {
-    gtl::flat_hash_map<string, int> metadata_map;
+    flat_hash_map<string, int> metadata_map;
     string line;
     ifstream fin(string(input_prefix + ".metadata").c_str());
     while (std::getline(fin, line)) {
@@ -37,7 +48,7 @@ tuple<uint64_t, uint64_t> Gatherly::SplittedIndex::load_metadata(const std::stri
 }
 
 void Gatherly::SplittedIndex::load_id_to_kmer_count(const std::string& filename) {
-    gtl::BinaryInputArchive ar_in(filename.c_str());
+    BinaryInputArchive ar_in(filename.c_str());
     this->id_to_kmer_count.phmap_load(ar_in);
     assert(this->id_to_kmer_count.size());
 }
@@ -50,7 +61,7 @@ void Gatherly::SplittedIndex::load_id_to_name(const std::string& filename) {
         std::vector<string> tokens;
         std::istringstream iss(line);
         std::string token;
-        while (std::getline(iss, token, ',')) tokens.push_back(token);
+        while (std::getline(iss, token, '\t')) tokens.push_back(token);
         this->id_to_name[to_uint64_t(tokens[0])] = tokens[1];
     }
     fin.close();
@@ -58,7 +69,7 @@ void Gatherly::SplittedIndex::load_id_to_name(const std::string& filename) {
 
 void Gatherly::SplittedIndex::load_color_to_count(int part_id) {
     string filePath = this->index_parts[part_id].color_to_count;
-    gtl::BinaryInputArchive ar_in_colorsCount(filePath.c_str());
+    BinaryInputArchive ar_in_colorsCount(filePath.c_str());
     this->index_parts[part_id].color_to_count_map->phmap_load(ar_in_colorsCount);
     assert(this->index_parts[part_id].color_to_count_map->size());
 }
@@ -66,14 +77,14 @@ void Gatherly::SplittedIndex::load_color_to_count(int part_id) {
 // Kinda slow, but no alternative.
 void Gatherly::SplittedIndex::load_colors_to_ids(int part_id) {
     string filePath = this->index_parts[part_id].color_to_sources;
-    gtl::BinaryInputArchive ar_in(filePath.c_str());
+    BinaryInputArchive ar_in(filePath.c_str());
     size_t size;
     ar_in.loadBinary(&size);
     this->index_parts[part_id].color_to_ids_map->reserve(size);
     while (size--)
     {
         uint64_t k;
-        gtl::flat_hash_set<uint32_t> v;
+        flat_hash_set<uint32_t> v;
         ar_in.loadBinary(&k);
         ar_in.loadBinary(&v);
         this->index_parts[part_id].color_to_ids_map->insert_or_assign(std::move(k), std::move(v));
@@ -82,7 +93,7 @@ void Gatherly::SplittedIndex::load_colors_to_ids(int part_id) {
 
 void Gatherly::SplittedIndex::load_kmer_to_color(int part_id) {
     string filePath = this->index_parts[part_id].kmer_to_color;
-    gtl::BinaryInputArchive ar_in(filePath.c_str());
+    BinaryInputArchive ar_in(filePath.c_str());
     this->index_parts[part_id].kmer_to_color_map->phmap_load(ar_in);
 }
 
@@ -98,7 +109,7 @@ void Gatherly::SplittedIndex::load_all_parts() {
         this->load_single_part(part_id);
 }
 
-uint64_t Gatherly::SplittedIndex::get_kmer_count(int & source_id) {
+uint64_t Gatherly::SplittedIndex::get_kmer_count(int& source_id) {
     return this->id_to_kmer_count[source_id];
 }
 
@@ -130,11 +141,11 @@ uint64_t Gatherly::SplittedIndex::get_color_from_hash(uint64_t& kmer_hash) {
     return this->index_parts[kmer_to_part(kmer_hash)].kmer_to_color_map->operator[](kmer_hash);
 }
 
-gtl::flat_hash_set<uint32_t> Gatherly::SplittedIndex::get_ids_from_color(uint64_t &kmer_color, int part_id) {
+flat_hash_set<uint32_t> Gatherly::SplittedIndex::get_ids_from_color(uint64_t& kmer_color, int part_id) {
     return this->index_parts[part_id].color_to_ids_map->operator[](kmer_color);
 }
 
-gtl::flat_hash_set<uint32_t> Gatherly::SplittedIndex::get_ids_from_hash(uint64_t &kmer_hash) {
+flat_hash_set<uint32_t> Gatherly::SplittedIndex::get_ids_from_hash(uint64_t& kmer_hash) {
     int inferred_part_id = this->kmer_to_part(kmer_hash);
     uint64_t kmer_color = this->index_parts[inferred_part_id].kmer_to_color_map->operator[](kmer_hash);
     return this->get_ids_from_color(kmer_color, inferred_part_id);
@@ -142,32 +153,34 @@ gtl::flat_hash_set<uint32_t> Gatherly::SplittedIndex::get_ids_from_hash(uint64_t
 
 
 
-Gatherly::SplittedIndex::SplittedIndex(string directory, string input_prefix) {
+Gatherly::SplittedIndex::SplittedIndex(string input_prefix) {
     string _file_id_to_name = input_prefix + "_id_to_name.tsv";
     string _file_id_to_kmer_count = input_prefix + "_groupID_to_kmerCount.bin";
-    this->directory_path = directory;
-    this->input_prefix = input_prefix;
-    this->metadata_file = input_prefix + ".metadata";
-    auto metadata_tup = this->load_metadata(this->metadata_file);
-    this->scale = get<0>(metadata_tup);
-    this->total_parts = get<1>(metadata_tup);
-    this->load_id_to_kmer_count(_file_id_to_kmer_count);
-    this->load_id_to_name(_file_id_to_name);
-    this->splitted_ranges(this->scale, this->total_parts);
+    // this->input_prefix = input_prefix;
+    // this->metadata_file = input_prefix + ".metadata";
+    // auto metadata_tup = this->load_metadata(this->metadata_file);
+    // this->scale = get<0>(metadata_tup);
+    // this->total_parts = get<1>(metadata_tup);
+    // this->load_id_to_name(_file_id_to_name);
+    // this->splitted_ranges(this->scale, this->total_parts);
+    // this->load_id_to_kmer_count(_file_id_to_kmer_count);
 
 
-    for (int part_id = 1; part_id <= this->total_parts; part_id++) {
-        string part_name = "part" + to_string(part_id);
-        string _file_color_to_sources = input_prefix.append("_color_to_sources." + part_name + ".bin");
-        string _file_color_to_count = input_prefix.append("_color_count." + part_name + ".bin");
-        string _file_kmer_to_color = input_prefix.append("kmer_to_color." + part_name + ".phmap");
-        IndexStruct tmp_IndexStruct;
-        tmp_IndexStruct.color_to_count = _file_color_to_count;
-        tmp_IndexStruct.color_to_sources = _file_color_to_sources;
-        tmp_IndexStruct.kmer_to_color = _file_kmer_to_color;
-        this->index_parts[part_id] = tmp_IndexStruct;
-    }
+    // for (int part_id = 1; part_id <= this->total_parts; part_id++) {
+    //     string part_name = "part" + to_string(part_id);
+    //     string _file_color_to_sources = input_prefix.append("_color_to_sources." + part_name + ".bin");
+    //     string _file_color_to_count = input_prefix.append("_color_count." + part_name + ".bin");
+    //     string _file_kmer_to_color = input_prefix.append("kmer_to_color." + part_name + ".phmap");
+    //     IndexStruct tmp_IndexStruct;
+    //     tmp_IndexStruct.color_to_count = _file_color_to_count;
+    //     tmp_IndexStruct.color_to_sources = _file_color_to_sources;
+    //     tmp_IndexStruct.kmer_to_color = _file_kmer_to_color;
+    //     this->index_parts[part_id] = tmp_IndexStruct;
+    // }
 
 }
 
 
+Gatherly::SplittedIndex * make_SplittedIndex(string index_prefix){
+    return new Gatherly::SplittedIndex(index_prefix);
+}
