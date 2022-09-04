@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <tuple>
 #include <parallel_hashmap/phmap.h>
+#include <set>
 
 
 using namespace std;
@@ -88,8 +89,11 @@ namespace Gatherly {
         // given a hashed_kmer, return its color
         uint64_t get_color_from_hash(uint64_t& kmer_hash);
 
-        // given a hashed_kmer, return its associated sources
-        flat_hash_set<uint32_t> get_ids_from_hash(uint64_t& kmer_hash);
+        // given a hashed_kmer, return its associated sources (ids)
+        set<uint32_t> get_ids_from_hash(uint64_t& kmer_hash);
+
+        // given a hashed_kmer, return its associated sources (names)
+        vector<string> get_sources_from_hash(uint64_t& kmer_hash);
 
         // given a hashed_kmer, return its associated sources
         flat_hash_set<uint32_t> get_ids_from_color(uint64_t& kmer_hash, int part_id);
