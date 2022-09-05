@@ -11,17 +11,17 @@ namespace py = pybind11;
 using namespace Gatherly;
 
 
-PYBIND11_MODULE(splitted_index, m) {
+PYBIND11_MODULE(gatherly, m) {
     m.doc() = R"pbdoc(
-        Pybind11 example plugin
+        An ultrafast gather!
         -----------------------
 
-        .. currentmodule:: splitted_index
+        .. currentmodule:: gatherly
 
         .. autosummary::
            :toctree: _generate
 
-           splitted_index
+           gatherly
     )pbdoc";
     py::class_<SplittedIndex>(m, "SplittedIndex")
         .def(py::init<const std::string&>())
