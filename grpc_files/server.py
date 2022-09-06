@@ -7,7 +7,7 @@ import logging
 import json
 import sys
 import argparse
-
+import time
 
 class Gatherly(gatherly_pb2_grpc.GatherlyServicer):
     def gather_kmer(self, request, context):
@@ -37,12 +37,15 @@ if __name__ == '__main__':
     logging.basicConfig()
     parser = argparse.ArgumentParser()
     parser.add_argument('--index', type=str, required=True, help="index_prefix")
+    parser.add_argument('-k', type=int, required=True, help="kSize")    
     args = parser.parse_args()
     index_prefix = args.index
-    kSize = 51
+    kSize = args.k
     print("initializing the server", file = sys.stderr)
     Gath = gatherly.SplittedIndex(index_prefix, kSize)
     print("Loading all parts of the index", file = sys.stderr)
+    now = time.time()
     Gath.load_all_parts()
+    print(f"Loaded all parts in {time.time() - now} seconds")
     print("server is ready.")
     serve()
