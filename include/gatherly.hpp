@@ -6,7 +6,7 @@
 #include <tuple>
 #include <parallel_hashmap/phmap.h>
 #include <set>
-
+#include <unordered_map>
 
 using namespace std;
 using phmap::flat_hash_map;
@@ -40,6 +40,7 @@ namespace Gatherly {
         string input_prefix;
         string metadata_file;
         int total_parts;
+        int kSize;
 
         // Scale param used while indexing
         int scale;
@@ -57,7 +58,7 @@ namespace Gatherly {
         flat_hash_map<int, tuple<uint64_t, uint64_t>> hash_ranges;
 
         // Class constructor
-        SplittedIndex(string input_prefix);
+        SplittedIndex(string input_prefix, int kSize);
 
         // Function to deserialize phmap of color to set of ids
         void load_colors_to_ids(int part_id);
@@ -104,7 +105,15 @@ namespace Gatherly {
         // TODO: Optimize to interval search
         int kmer_to_part(uint64_t& kmer_hash);
 
-        string gatherly_test();
+
+        /*
+            QUERY
+        */
+
+       // TODO: allow searching with multiple kmer sizes
+       // TODO: implement multithreading
+       unordered_map<string, int> query_sig(string sig_path);
+       unordered_map<string, int> query_fastx(string sig_path);
 
 
         // ~SplittedIndex();

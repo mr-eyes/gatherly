@@ -5,6 +5,9 @@
 #include <gatherly.hpp>
 #include <parallel_hashmap/phmap.h>
 #include <parallel_hashmap/phmap_dump.h>
+#include "json.h"
+#include "zstr.hpp"
+#include <kmerDecoder.hpp>
 
 
 using namespace std;
@@ -13,10 +16,6 @@ using phmap::flat_hash_set;
 using phmap::parallel_flat_hash_map;
 using phmap::BinaryInputArchive;
 
-
-string Gatherly::SplittedIndex::gatherly_test() {
-    return "Hello, Gatherly!";
-}
 
 
 inline uint64_t to_uint64_t(std::string const& value) {
@@ -168,8 +167,61 @@ vector<string> Gatherly::SplittedIndex::get_sources_from_hash(uint64_t& kmer_has
 }
 
 
+// TODO make it multithreading if needed
+unordered_map<string, int> Gatherly::SplittedIndex::query_sig(string sig_path) {
+    flat_hash_map<string, int> tmp_res;
+    unordered_map<string, int> res;
 
-Gatherly::SplittedIndex::SplittedIndex(string input_prefix) {
+    zstr::ifstream sig_stream(sig_path);
+    json::value json = json::parse(sig_stream);
+    auto sourmash_sig = json[0]["signatures"];
+    const json::array& sig_array = as_array(sourmash_sig);
+    for (auto it = sig_array.begin(); it != sig_array.end(); ++it) {
+        const json::value& v = *it;
+        if (v["ksize"] == this->kSize) {
+            const json::array& mins = as_array(v["mins"]);
+            auto mins_it = mins.begin();
+            while (mins_it != mins.end()) {
+                uint64_t hashed_kmer = json::to_number<uint64_t>(*mins_it);
+                auto kmer_sources = this->get_sources_from_hash(hashed_kmer);
+                for (auto& kmer_source : kmer_sources) tmp_res[kmer_source]++;
+                mins_it++;
+            }
+            break;
+        }
+    }
+    for (auto& entry : tmp_res) res[entry.first] = entry.second;
+    return res;
+}
+
+// TODO make it multithreading if needed
+unordered_map<string, int> Gatherly::SplittedIndex::query_fastx(string fastx_path) {
+    flat_hash_map<string, int> tmp_res;
+    unordered_map<string, int> res;
+
+    int chunk_size = 10000;
+    kmerDecoder* KmersReader = new Kmers(fastx_path, chunk_size, this->kSize);
+    while (!KmersReader->end()) {
+        KmersReader->next_chunk();
+        for (const auto& seq : *KmersReader->getKmers()) {
+            for (const auto& kmer : seq.second) {
+                uint64_t kmer_hash = kmer.hash;
+                auto kmer_sources = this->get_sources_from_hash(kmer_hash);
+                for (auto& kmer_source : kmer_sources) tmp_res[kmer_source]++;
+            }
+        }
+    }
+
+    delete KmersReader;
+
+    for (auto& entry : tmp_res) res[entry.first] = entry.second;
+    return res;
+}
+
+
+
+Gatherly::SplittedIndex::SplittedIndex(string input_prefix, int kSize) {
+    this->kSize = kSize;
     string _file_id_to_name = input_prefix + "_id_to_name.tsv";
     string _file_id_to_kmer_count = input_prefix + "_groupID_to_kmerCount.bin";
     this->input_prefix = input_prefix;
@@ -194,9 +246,4 @@ Gatherly::SplittedIndex::SplittedIndex(string input_prefix) {
         this->index_parts[part_id] = tmp_IndexStruct;
     }
 
-}
-
-
-Gatherly::SplittedIndex* make_SplittedIndex(string index_prefix) {
-    return new Gatherly::SplittedIndex(index_prefix);
 }
