@@ -15,7 +15,7 @@ def run(file_path, file_type, kSize):
     #     response = stub.gather_kmer(gatherly_pb2.KmerHash(kmer_hash=20236993234229))
     # print("Kmer Sources: " + response.sources)
 
-    with grpc.insecure_channel('localhost:50000') as channel:
+    with grpc.insecure_channel('localhost:50000', options=[('grpc.max_receive_message_length', 1000 * 1024 * 1024)]) as channel:
         stub = gatherly_pb2_grpc.GatherlyStub(channel)
         if file_type == "smash":
             response = stub.gather_sig(
@@ -27,7 +27,6 @@ def run(file_path, file_type, kSize):
             print(response.sources)
         else:
             print("something went wrong!")
-
 
 
 if __name__ == '__main__':
@@ -54,5 +53,5 @@ if __name__ == '__main__':
         file_path = fastx_path
     else:
         sys.exit("no files are being passed.")
-        
+
     run(file_path, file_type, kSize)
