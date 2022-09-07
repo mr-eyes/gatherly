@@ -17,6 +17,7 @@ class Gatherly(gatherly_pb2_grpc.GatherlyServicer):
         return gatherly_pb2.KmerSources(sources=result)
 
     def gather_sig(self, request, context):
+        print(f"received a sourmash sig query", file = sys.stderr)
         result = json.dumps(Gath.query_sig(
             request.sig_path), indent=4)
         return gatherly_pb2.Sources(sources=result)
@@ -55,5 +56,5 @@ if __name__ == '__main__':
     IP_ADDRESS = s.getsockname()[0]
     s.close()
     PORT = 50000
-    print(f"Hosting at {IP_ADDRESS}::{PORT}")
+    print(f"Hosting at {IP_ADDRESS}::{PORT}", file = sys.stderr)
     serve(str(IP_ADDRESS), PORT)
