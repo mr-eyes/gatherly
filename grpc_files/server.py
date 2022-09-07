@@ -57,4 +57,4 @@ if __name__ == '__main__':
     s.close()
     PORT = 50000
     print(f"Hosting at {IP_ADDRESS}::{PORT}", file = sys.stderr)
-    serve("localhost", PORT)
+    serve("0.0.0.0", PORT)
