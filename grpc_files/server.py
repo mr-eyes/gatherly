@@ -55,4 +55,5 @@ if __name__ == '__main__':
     IP_ADDRESS = s.getsockname()[0]
     s.close()
     PORT = 50000
+    print(f"Hosting at {IP_ADDRESS}::{PORT}")
     serve(str(IP_ADDRESS), PORT)
