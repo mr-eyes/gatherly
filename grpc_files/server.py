@@ -8,6 +8,8 @@ import json
 import sys
 import argparse
 import time
+import socket
+
 
 class Gatherly(gatherly_pb2_grpc.GatherlyServicer):
     def gather_kmer(self, request, context):
@@ -25,10 +27,10 @@ class Gatherly(gatherly_pb2_grpc.GatherlyServicer):
         return gatherly_pb2.Sources(sources=result)
 
 
-def serve():
+def serve(IP_ADDRESS, PORT):
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     gatherly_pb2_grpc.add_GatherlyServicer_to_server(Gatherly(), server)
-    server.add_insecure_port('[::]:50000')
+    server.add_insecure_port(f'{IP_ADDRESS}:{PORT}')
     server.start()
     server.wait_for_termination()
 
@@ -48,4 +50,9 @@ if __name__ == '__main__':
     Gath.load_all_parts()
     print(f"Loaded all parts in {time.time() - now} seconds")
     print("server is ready.")
-    serve()
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.connect(("8.8.8.8", 80))
+    IP_ADDRESS = s.getsockname()[0]
+    s.close()
+    PORT = 50000
+    serve(str(IP_ADDRESS), PORT)
