@@ -1,3 +1,1 @@
-[submodule "lib/kmerDecoder"]
-	path = lib/kmerDecoder
-	url = git@github.com:dib-lab/kmerDecoder.git
+

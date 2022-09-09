@@ -113,7 +113,6 @@ namespace Gatherly {
        // TODO: allow searching with multiple kmer sizes
        // TODO: implement multithreading
        unordered_map<string, int> query_sig(string sig_path);
-       unordered_map<string, int> query_fastx(string sig_path);
 
 
         // ~SplittedIndex();

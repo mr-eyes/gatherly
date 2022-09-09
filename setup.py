@@ -7,15 +7,11 @@ from pybind11.setup_helpers import build_ext
 from setuptools import Extension as Pybind11Extension
 from setuptools import setup
 
-__version__ = "0.0.2"
+__version__ = "0.0.3"
 
 ext_modules = [
     Pybind11Extension("gatherly",
-                      ["src/gatherly.cpp", "src/pygatherly/main.cpp"] +
-                      sorted(glob("lib/kmerDecoder/src/*cpp")) +
-                      sorted(glob("lib/kmerDecoder/src/hashUtils/*cpp")) +
-                      sorted(glob("lib/kmerDecoder/src/Utils/*cpp")),
-                      library_dirs=['build/lib/kmerDecoder'],
+                      ["src/gatherly.cpp", "src/pygatherly/main.cpp"],
                       libraries=['z'],
                       define_macros=[('VERSION_INFO', __version__)],
                       ),
@@ -30,8 +26,7 @@ setup(
     description="An ultrafast gather!",
     long_description="",
     ext_modules=ext_modules,
-    include_dirs=["include", "lib/pybind11/include", "lib/parallel-hashmap", "lib/zstr/src", "lib/cpp-json",
-                  "lib/kmerDecoder/include", "lib/kmerDecoder/lib/kseq/include", "lib/kmerDecoder/include/Utils", "lib/kmerDecoder/include/hashUtils"],
+    include_dirs=["include", "lib/pybind11/include", "lib/parallel-hashmap", "lib/zstr/src", "lib/cpp-json"],
     extras_require={"test": "pytest"},
     cmdclass={"build_ext": build_ext},
     zip_safe=False,

@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package gatherly;
 
+
 service Gatherly {
   // query a single hashed_kmer
   rpc gather_kmer (KmerHash) returns (KmerSources) {}
@@ -9,7 +10,6 @@ service Gatherly {
   // query a full sourmash sig (gzipped or not)
   // TODO use stream here
   rpc gather_sig (sourmashSig) returns (Sources) {}
-  rpc gather_fastx (FASTXFile) returns (Sources) {}
 
 }
 
@@ -25,11 +25,6 @@ message KmerSources {
 // query a complete sourmash signature
 message sourmashSig{
   string sig_path = 1;
-  int64 kSize = 2;
-}
-
-message FASTXFile {
-  string fastx_path = 1;
   int64 kSize = 2;
 }
 

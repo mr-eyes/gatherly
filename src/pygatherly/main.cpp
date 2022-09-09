@@ -33,5 +33,4 @@ PYBIND11_MODULE(gatherly, m) {
         .def("get_sources_from_hash", &SplittedIndex::get_sources_from_hash)
         .def("get_ids_from_hash", &SplittedIndex::get_ids_from_hash)
         .def("query_sig", &SplittedIndex::query_sig)
-        .def("query_fastx", &SplittedIndex::query_fastx);
 }

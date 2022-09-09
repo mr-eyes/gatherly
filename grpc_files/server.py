@@ -21,11 +21,6 @@ class Gatherly(gatherly_pb2_grpc.GatherlyServicer):
         result = json.dumps(Gath.query_sig(
             request.sig_path), indent=4)
         return gatherly_pb2.Sources(sources=result)
-    
-    def gather_fastx(self, request, context):
-        result = json.dumps(Gath.query_fastx(
-            request.fastx_path), indent=4)
-        return gatherly_pb2.Sources(sources=result)
 
 
 def serve(IP_ADDRESS, PORT):

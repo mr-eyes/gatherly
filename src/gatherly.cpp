@@ -7,7 +7,6 @@
 #include <parallel_hashmap/phmap_dump.h>
 #include "json.h"
 #include "zstr.hpp"
-#include <kmerDecoder.hpp>
 
 
 using namespace std;
@@ -158,7 +157,7 @@ set<uint32_t> Gatherly::SplittedIndex::get_ids_from_hash(uint64_t& kmer_hash) {
 
 vector<string> Gatherly::SplittedIndex::get_sources_from_hash(uint64_t& kmer_hash) {
     int inferred_part_id = this->kmer_to_part(kmer_hash);
-    if(inferred_part_id == 0) return {};
+    if (inferred_part_id == 0) return {};
     uint64_t kmer_color = this->index_parts[inferred_part_id].kmer_to_color_map->operator[](kmer_hash);
     vector<string> res;
     for (auto& _id : this->get_ids_from_color(kmer_color, inferred_part_id)) {
@@ -194,36 +193,6 @@ unordered_map<string, int> Gatherly::SplittedIndex::query_sig(string sig_path) {
     for (auto& entry : tmp_res) res[entry.first] = entry.second;
     return res;
 }
-
-// TODO make it multithreading if needed
-unordered_map<string, int> Gatherly::SplittedIndex::query_fastx(string fastx_path) {
-    parallel_flat_hash_map<string, int> tmp_res;
-    unordered_map<string, int> res;
-
-    int chunk_size = 10000;
-    kmerDecoder* KmersReader = new Kmers(fastx_path, chunk_size, this->kSize);
-    while (!KmersReader->end()) {
-        KmersReader->next_chunk();
-        for (const auto& seq : *KmersReader->getKmers()) {
-            for (const auto& kmer : seq.second) {
-                uint64_t kmer_hash = kmer.hash;
-                auto kmer_sources = this->get_sources_from_hash(kmer_hash);
-                for (auto& source : kmer_sources) {
-                    tmp_res.try_emplace_l(source,
-                        [](parallel_flat_hash_map<string, int>::value_type& v) { v.second += 1; },           // called only when key was already present
-                        1
-                    );
-                };
-            }
-        }
-    }
-
-    delete KmersReader;
-
-    for (auto& entry : tmp_res) res[entry.first] = entry.second;
-    return res;
-}
-
 
 
 Gatherly::SplittedIndex::SplittedIndex(string input_prefix, int kSize) {
