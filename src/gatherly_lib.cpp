@@ -59,7 +59,7 @@ vector<file_info> file_fetcher(const std::string& pattern) {
         finfo.path = std::string(glob_result.gl_pathv[i]);
         size_t _lastindex = finfo.path.find_last_of(".");
         finfo.prefix = finfo.path.substr(0, _lastindex);
-        finfo.base_name = finfo.prefix.substr(finfo.prefix.find_last_of("/\\") + 1);
+        finfo.base_name = finfo.path.substr(finfo.path.find_last_of("/\\") + 1);
 
         filenames.push_back(finfo);
     }
